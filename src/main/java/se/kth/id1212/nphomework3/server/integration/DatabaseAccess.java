@@ -12,6 +12,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -33,21 +35,30 @@ public class DatabaseAccess {
     private PreparedStatement updateNotificationStmt; //only can be done by file owner*/
     private PreparedStatement listAllFilesStmt;
     private PreparedStatement listAllUsersStmt;
+    private Connection connection;
+    
+    public DatabaseAccess(String databaseName) throws ClassNotFoundException{
+        try {
+            connection = createDatasource(databaseName);
+            prepareStatements(connection);
+        } catch (SQLException exception) {
+            System.out.println("Help");
+        }
+    }
 
     private void accessDB() {
         try {
-            Class.forName("org.apache.derby.jdbc.ClientXADataSource");
-            Connection connection = DriverManager.getConnection(
+            //Class.forName("org.apache.derby.jdbc.ClientXADataSource");
+            /*Connection connection = DriverManager.getConnection(
                     "jdbc:derby://localhost:1527/MyTestDatabase", "jdbc",
-                    "jdbc");
+                    "jdbc");*/
+            /*Connection connection = connectToDB("test");
             createUserTable(connection);
-            createFileTable(connection);
+            createFileTable(connection);*/
+            //Connection connection = createDatasource("Bank");
             //Statement stmt = connection.createStatement();
-            prepareStatements(connection);
-            unregisterUserStmt.setString(1, "stina");
-            unregisterUserStmt.executeUpdate();
-            deleteFileStmt.setString(1, "stina's file");
-            deleteFileStmt.executeUpdate();
+            //prepareStatements(connection);
+            
             registerUserStmt.setString(1, "stina");
             registerUserStmt.setString(2, "abcd");
             //createPersonStmt.setInt(3, 43);
@@ -65,8 +76,17 @@ public class DatabaseAccess {
             //deletePersonStmt.setString(1, "stina");
             //deletePersonStmt.executeUpdate();
             //listAllRows(connection);
-        } catch (ClassNotFoundException | SQLException ex) {
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            try {
+                //ex.printStackTrace();
+                unregisterUserStmt.setString(1, "stina");
+                unregisterUserStmt.executeUpdate();
+                deleteFileStmt.setString(1, "stina's file");
+                deleteFileStmt.executeUpdate();
+                //accessDB();
+            } catch (SQLException ex1) {
+                ex1.printStackTrace();
+            }
         }
     }
 
@@ -98,8 +118,42 @@ public class DatabaseAccess {
         }
         return false;
     }
+    
+    private void prepareStatements(Connection connection) throws SQLException {
+        registerUserStmt = connection.prepareStatement("INSERT INTO " + USER_TABLE_NAME + " VALUES (?, ?)");
+        unregisterUserStmt = connection.prepareStatement("DELETE FROM " + USER_TABLE_NAME + " WHERE username = ?");
+        uploadFileStmt = connection.prepareStatement("INSERT INTO " + FILE_TABLE_NAME + " VALUES (?, ?, ?, ?, ?, ?, ?)");
+        deleteFileStmt = connection.prepareStatement("DELETE FROM " + FILE_TABLE_NAME + " WHERE filename = ?");
+        listAllUsersStmt = connection.prepareStatement("SELECT * from " + USER_TABLE_NAME);
+        listAllFilesStmt = connection.prepareStatement("SELECT * from " + FILE_TABLE_NAME);
+        
+    }
 
-    private void listAllFiles(Connection connection) throws SQLException {
+    //METHODS WHICH CAN BE CALLED BY SERVER 
+    
+    public void registerUser(String username, String password) throws SQLException{ //If duplicate user should throw exception 
+        registerUserStmt.setString(1, username);
+        registerUserStmt.setString(2, password);
+        registerUserStmt.executeUpdate();
+    }
+    /*
+    public void unregisterUser(String username, String password) throws SQLException{
+        
+    }
+    */
+    private Connection connectToDB(String databaseName)throws ClassNotFoundException, SQLException{
+        Class.forName("org.apache.derby.jdbc.ClientXADataSource");
+        return DriverManager.getConnection( "jdbc:derby://localhost:1527/" + databaseName + ";create=true");
+    }
+    
+    private Connection createDatasource(String databaseName) throws ClassNotFoundException, SQLException{
+        Connection connection = connectToDB(databaseName);
+        createUserTable(connection);
+        createFileTable(connection);
+        return connection;
+    }
+    
+    public void listAllFiles(Connection connection) throws SQLException {
         ResultSet files = listAllFilesStmt.executeQuery();
         String privacy = "";
         String read = "";
@@ -136,17 +190,7 @@ public class DatabaseAccess {
         }
     }
 
-    private void prepareStatements(Connection connection) throws SQLException {
-        registerUserStmt = connection.prepareStatement("INSERT INTO " + USER_TABLE_NAME + " VALUES (?, ?)");
-        unregisterUserStmt = connection.prepareStatement("DELETE FROM " + USER_TABLE_NAME + " WHERE username = ?");
-        uploadFileStmt = connection.prepareStatement("INSERT INTO " + FILE_TABLE_NAME + " VALUES (?, ?, ?, ?, ?, ?, ?)");
-        deleteFileStmt = connection.prepareStatement("DELETE FROM " + FILE_TABLE_NAME + " WHERE filename = ?");
-        listAllUsersStmt = connection.prepareStatement("SELECT * from " + USER_TABLE_NAME);
-        listAllFilesStmt = connection.prepareStatement("SELECT * from " + FILE_TABLE_NAME);
-        
-    }
-
-    public static void main(String[] args) {
-        new DatabaseAccess().accessDB();
+    public static void main(String[] args) throws ClassNotFoundException {
+        new DatabaseAccess("test").accessDB();
     }
 }

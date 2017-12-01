@@ -32,6 +32,7 @@ public class DatabaseAccess {
     private PreparedStatement updatedWritePrivacyStmt; //only can be done by file owner
     private PreparedStatement updateNotificationStmt; //only can be done by file owner*/
     private PreparedStatement listAllFilesStmt;
+    private PreparedStatement listAllUsersStmt;
 
     private void accessDB() {
         try {
@@ -45,19 +46,22 @@ public class DatabaseAccess {
             prepareStatements(connection);
             unregisterUserStmt.setString(1, "stina");
             unregisterUserStmt.executeUpdate();
+            deleteFileStmt.setString(1, "stina's file");
+            deleteFileStmt.executeUpdate();
             registerUserStmt.setString(1, "stina");
             registerUserStmt.setString(2, "abcd");
             //createPersonStmt.setInt(3, 43);
             registerUserStmt.executeUpdate();
-            /*uploadFileStmt.setString(1, "stina's file");
+            uploadFileStmt.setString(1, "stina's file");
             uploadFileStmt.setString(2, "stina");
             uploadFileStmt.setString(3, "file path");
             uploadFileStmt.setBoolean(4, true);
             uploadFileStmt.setBoolean(5, true);
             uploadFileStmt.setBoolean(6, false);
-            uploadFileStmt.setBoolean(7, true);*/
+            uploadFileStmt.setBoolean(7, true);
+            uploadFileStmt.executeUpdate();
             //createPersonStmt.executeUpdate();
-            //listAllRows(connection);
+            listAllFiles(connection);
             //deletePersonStmt.setString(1, "stina");
             //deletePersonStmt.executeUpdate();
             //listAllRows(connection);
@@ -95,7 +99,7 @@ public class DatabaseAccess {
         return false;
     }
 
-    private void listAllRows(Connection connection) throws SQLException {
+    private void listAllFiles(Connection connection) throws SQLException {
         ResultSet files = listAllFilesStmt.executeQuery();
         String privacy = "";
         String read = "";
@@ -133,17 +137,12 @@ public class DatabaseAccess {
     }
 
     private void prepareStatements(Connection connection) throws SQLException {
-        registerUserStmt = connection.prepareStatement("INSERT INTO "
-                                                       + USER_TABLE_NAME + " VALUES (?, ?)");
-        unregisterUserStmt = connection.prepareStatement("DELETE FROM "
-                                                       + USER_TABLE_NAME
-                                                       + " WHERE username = ?");
-       // uploadFileStmt = connection.prepareStatement("INSERT INTO " + FILE_TABLE_NAME + " VALUES (?, ?, ?, ?, ?, ?, ?)");
-        //deleteFileStmt = connection.prepareStatement("DELETE FROM "
-                                                      // + FILE_TABLE_NAME
-                                                       //+ " WHERE filename = ?");
-       // listAllUsersStmt = connection.prepareStatement("SELECT * from "
-                                                        // + USER_TABLE_NAME);
+        registerUserStmt = connection.prepareStatement("INSERT INTO " + USER_TABLE_NAME + " VALUES (?, ?)");
+        unregisterUserStmt = connection.prepareStatement("DELETE FROM " + USER_TABLE_NAME + " WHERE username = ?");
+        uploadFileStmt = connection.prepareStatement("INSERT INTO " + FILE_TABLE_NAME + " VALUES (?, ?, ?, ?, ?, ?, ?)");
+        deleteFileStmt = connection.prepareStatement("DELETE FROM " + FILE_TABLE_NAME + " WHERE filename = ?");
+        listAllUsersStmt = connection.prepareStatement("SELECT * from " + USER_TABLE_NAME);
+        listAllFilesStmt = connection.prepareStatement("SELECT * from " + FILE_TABLE_NAME);
         
     }
 

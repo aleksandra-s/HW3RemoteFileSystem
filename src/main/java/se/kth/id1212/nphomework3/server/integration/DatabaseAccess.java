@@ -23,6 +23,14 @@ public class DatabaseAccess {
     private static final String FILE_TABLE_NAME = "files";
     private PreparedStatement registerUserStmt;
     private PreparedStatement unregisterUserStmt;
+    private PreparedStatement uploadFileStmt;
+    private PreparedStatement deleteFileStmt;
+    //private PreparedStatement updateFileStmt;
+   /* private PreparedStatement updateFileNameStmt; //only can be done if file owner
+    private PreparedStatement updateFilePrivacyStmt; //only can be done by file owner
+    private PreparedStatement updateReadPrivacyStmt; //only can be done by file owner
+    private PreparedStatement updatedWritePrivacyStmt; //only can be done by file owner
+    private PreparedStatement updateNotificationStmt; //only can be done by file owner*/
     private PreparedStatement listAllFilesStmt;
 
     private void accessDB() {
@@ -31,40 +39,56 @@ public class DatabaseAccess {
             Connection connection = DriverManager.getConnection(
                     "jdbc:derby://localhost:1527/MyTestDatabase", "jdbc",
                     "jdbc");
-            createTable(connection);
-            Statement stmt = connection.createStatement();
+            createUserTable(connection);
+            createFileTable(connection);
+            //Statement stmt = connection.createStatement();
             prepareStatements(connection);
-            createPersonStmt.setString(1, "stina");
-            createPersonStmt.setString(2, "0123456789");
-            createPersonStmt.setInt(3, 43);
+            unregisterUserStmt.setString(1, "stina");
+            unregisterUserStmt.executeUpdate();
+            registerUserStmt.setString(1, "stina");
+            registerUserStmt.setString(2, "abcd");
+            //createPersonStmt.setInt(3, 43);
+            registerUserStmt.executeUpdate();
+            /*uploadFileStmt.setString(1, "stina's file");
+            uploadFileStmt.setString(2, "stina");
+            uploadFileStmt.setString(3, "file path");
+            uploadFileStmt.setBoolean(4, true);
+            uploadFileStmt.setBoolean(5, true);
+            uploadFileStmt.setBoolean(6, false);
+            uploadFileStmt.setBoolean(7, true);*/
             //createPersonStmt.executeUpdate();
-            createPersonStmt.setString(1, "olle");
-            createPersonStmt.setString(2, "9876543210");
-            createPersonStmt.setInt(3, 12);
-            //createPersonStmt.executeUpdate();
-            listAllRows(connection);
-            deletePersonStmt.setString(1, "stina");
-            deletePersonStmt.executeUpdate();
-            listAllRows(connection);
+            //listAllRows(connection);
+            //deletePersonStmt.setString(1, "stina");
+            //deletePersonStmt.executeUpdate();
+            //listAllRows(connection);
         } catch (ClassNotFoundException | SQLException ex) {
             ex.printStackTrace();
         }
     }
 
-    private void createTable(Connection connection) throws SQLException {
-        if (!tableExists(connection)) {
+    private void createUserTable(Connection connection) throws SQLException {
+        if (!tableExists(connection, USER_TABLE_NAME)) {
             Statement stmt = connection.createStatement();
             stmt.executeUpdate(
-                    "create table " + TABLE_NAME + " (name varchar(32) primary key, phone varchar(12), age int)");
+                    "create table " + USER_TABLE_NAME + " (username varchar(225) primary key, password varchar(12))");
+        }
+    }
+    
+     private void createFileTable(Connection connection) throws SQLException {
+        if (!tableExists(connection, FILE_TABLE_NAME)) {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate(
+                    "create table " + FILE_TABLE_NAME + " (filename varchar(225) primary key, username varchar(225), filepath varchar(225), privacy boolean, readable boolean, writeable boolean, notification boolean)");
         }
     }
 
-    private boolean tableExists(Connection connection) throws SQLException {
+
+    private boolean tableExists(Connection connection, String inputTableName) throws SQLException {
         DatabaseMetaData metaData = connection.getMetaData();
         ResultSet tableMetaData = metaData.getTables(null, null, null, null);
         while (tableMetaData.next()) {
             String tableName = tableMetaData.getString(3);
-            if (tableName.equalsIgnoreCase(TABLE_NAME)) {
+            if (tableName.equalsIgnoreCase(inputTableName)) {
                 return true;
             }
         }
@@ -72,22 +96,55 @@ public class DatabaseAccess {
     }
 
     private void listAllRows(Connection connection) throws SQLException {
-        ResultSet persons = findAllPersonsStmt.executeQuery();
-        while (persons.next()) {
+        ResultSet files = listAllFilesStmt.executeQuery();
+        String privacy = "";
+        String read = "";
+        String write = "";
+        String notifications = "";
+        while (files.next()) {
+            if(files.getBoolean(4)){
+                privacy = "public";
+            }
+            else{
+                privacy = "private";
+            }
+            if(files.getBoolean(5)){
+                read = "readable";
+            }
+            else{
+                read = "unreadable";
+            }
+            if(files.getBoolean(6)){
+                write = "writeable";
+            }
+            else{
+                write = "unwriteable";
+            }
+            if(files.getBoolean(7)){
+                notifications = "notifications on";
+            }
+            else{
+                notifications = "notifications off";
+            }
             System.out.println(
-                    "name: " + persons.getString(1) + ", phone: " + persons.getString(2) + ", age: " + persons.
-                    getInt(3));
+                    "name: " + files.getString(1) + ", owner: " + files.getString(2) + ", file path: " + files.
+                    getString(3) + ", " + privacy + ", " + read + ", " + write + ", " + notifications);
         }
     }
 
     private void prepareStatements(Connection connection) throws SQLException {
-        createPersonStmt = connection.prepareStatement("INSERT INTO "
-                                                       + TABLE_NAME + " VALUES (?, ?, ?)");
-        findAllPersonsStmt = connection.prepareStatement("SELECT * from "
-                                                         + TABLE_NAME);
-        deletePersonStmt = connection.prepareStatement("DELETE FROM "
-                                                       + TABLE_NAME
-                                                       + " WHERE name = ?");
+        registerUserStmt = connection.prepareStatement("INSERT INTO "
+                                                       + USER_TABLE_NAME + " VALUES (?, ?)");
+        unregisterUserStmt = connection.prepareStatement("DELETE FROM "
+                                                       + USER_TABLE_NAME
+                                                       + " WHERE username = ?");
+       // uploadFileStmt = connection.prepareStatement("INSERT INTO " + FILE_TABLE_NAME + " VALUES (?, ?, ?, ?, ?, ?, ?)");
+        //deleteFileStmt = connection.prepareStatement("DELETE FROM "
+                                                      // + FILE_TABLE_NAME
+                                                       //+ " WHERE filename = ?");
+       // listAllUsersStmt = connection.prepareStatement("SELECT * from "
+                                                        // + USER_TABLE_NAME);
+        
     }
 
     public static void main(String[] args) {

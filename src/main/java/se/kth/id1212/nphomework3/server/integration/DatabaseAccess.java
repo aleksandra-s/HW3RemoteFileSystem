@@ -27,6 +27,7 @@ public class DatabaseAccess {
     private PreparedStatement unregisterUserStmt;
     private PreparedStatement uploadFileStmt;
     private PreparedStatement deleteFileStmt;
+    private PreparedStatement findUserStmt;
     //private PreparedStatement updateFileStmt;
    /* private PreparedStatement updateFileNameStmt; //only can be done if file owner
     private PreparedStatement updateFilePrivacyStmt; //only can be done by file owner
@@ -61,10 +62,29 @@ public class DatabaseAccess {
             
             registerUserStmt.setString(1, "stina");
             registerUserStmt.setString(2, "abcd");
+             registerUserStmt.executeUpdate();
+            registerUserStmt.setString(1, "olle");
+            registerUserStmt.setString(2, "abcd");
             //createPersonStmt.setInt(3, 43);
             registerUserStmt.executeUpdate();
             uploadFileStmt.setString(1, "stina's file");
             uploadFileStmt.setString(2, "stina");
+            uploadFileStmt.setString(3, "file path");
+            uploadFileStmt.setBoolean(4, true);
+            uploadFileStmt.setBoolean(5, true);
+            uploadFileStmt.setBoolean(6, false);
+            uploadFileStmt.setBoolean(7, true);
+            uploadFileStmt.executeUpdate();
+            uploadFileStmt.setString(1, "stina's second file");
+            uploadFileStmt.setString(2, "stina");
+            uploadFileStmt.setString(3, "file path");
+            uploadFileStmt.setBoolean(4, true);
+            uploadFileStmt.setBoolean(5, true);
+            uploadFileStmt.setBoolean(6, false);
+            uploadFileStmt.setBoolean(7, true);
+            uploadFileStmt.executeUpdate();
+            uploadFileStmt.setString(1, "olle's file");
+            uploadFileStmt.setString(2, "olle");
             uploadFileStmt.setString(3, "file path");
             uploadFileStmt.setBoolean(4, true);
             uploadFileStmt.setBoolean(5, true);
@@ -79,10 +99,11 @@ public class DatabaseAccess {
         } catch (SQLException ex) {
             try {
                 //ex.printStackTrace();
-                unregisterUserStmt.setString(1, "stina");
+                unregisterUserStmt.setString(1, "olle");
                 unregisterUserStmt.executeUpdate();
-                deleteFileStmt.setString(1, "stina's file");
-                deleteFileStmt.executeUpdate();
+                //deleteFileStmt.setString(1, "olle's file");
+                //deleteFileStmt.executeUpdate();
+                unregisterUser("stina", "abcd");
                 //accessDB();
             } catch (SQLException ex1) {
                 ex1.printStackTrace();
@@ -126,6 +147,8 @@ public class DatabaseAccess {
         deleteFileStmt = connection.prepareStatement("DELETE FROM " + FILE_TABLE_NAME + " WHERE filename = ?");
         listAllUsersStmt = connection.prepareStatement("SELECT * from " + USER_TABLE_NAME);
         listAllFilesStmt = connection.prepareStatement("SELECT * from " + FILE_TABLE_NAME);
+        findUserStmt = connection.prepareStatement("SELECT * from "
+                                                      + USER_TABLE_NAME + " WHERE username = ?");
         
     }
 
@@ -136,11 +159,33 @@ public class DatabaseAccess {
         registerUserStmt.setString(2, password);
         registerUserStmt.executeUpdate();
     }
-    /*
-    public void unregisterUser(String username, String password) throws SQLException{
-        
+    
+    public boolean unregisterUser(String username, String password) throws SQLException{
+        ResultSet result = null;
+        boolean deleteFiles = false;
+        boolean completelyUnregistered = false;
+        findUserStmt.setString(1, username);
+        result = findUserStmt.executeQuery();
+        if(result.next()){
+            if(result.getString(2).equals(password)) {
+                unregisterUserStmt.setString(1, username);
+                unregisterUserStmt.executeUpdate();
+                deleteFiles = true;
+            }
+        }
+        if(deleteFiles){
+            ResultSet files = listAllFilesStmt.executeQuery();
+            while(files.next()){
+                if(files.getString(2).equals(username)){
+                    deleteFileStmt.setString(1, files.getString(1));
+                    deleteFileStmt.executeUpdate();
+                }
+            }
+            completelyUnregistered = true;
+        }
+        return completelyUnregistered;
     }
-    */
+    
     private Connection connectToDB(String databaseName)throws ClassNotFoundException, SQLException{
         Class.forName("org.apache.derby.jdbc.ClientXADataSource");
         return DriverManager.getConnection( "jdbc:derby://localhost:1527/" + databaseName + ";create=true");

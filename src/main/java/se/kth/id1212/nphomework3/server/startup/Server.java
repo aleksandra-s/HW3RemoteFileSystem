@@ -36,12 +36,12 @@ public class Server {
 
     public static void main(String[] args) {
         try {
-            long testID;
+            //long testID;
             Server server = new Server();
             server.parseCommandLineArgs(args);
             server.startRMIServant();
-            System.out.println("Bank server started.");
-            ServerController test = new ServerController("test2");
+            System.out.println("Server started.");
+            /*ServerController test = new ServerController("test2");
             test.register("stina", "abcd");
             testID = test.login("stina", "abcd", new ClientRemoteInterface() {
                 @Override
@@ -53,7 +53,7 @@ public class Server {
             
             test.listFiles();
             test.updateFilePath(testID, "Stina's file", "new file path");
-            test.listFiles();
+            test.listFiles();*/
         } catch (RemoteException | MalformedURLException | ClassNotFoundException | SQLException ex) {
             ex.printStackTrace();
             System.out.println("Failed to start bank server.");

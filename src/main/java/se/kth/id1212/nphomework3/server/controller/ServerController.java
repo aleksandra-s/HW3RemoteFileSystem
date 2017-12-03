@@ -71,6 +71,7 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
     public boolean register(String username, String password) throws RemoteException {
         try {
             fileDb.registerUser(username, password);
+            System.out.println("registered user");
             return true;
         } catch (SQLException ex) {
             //return registered;

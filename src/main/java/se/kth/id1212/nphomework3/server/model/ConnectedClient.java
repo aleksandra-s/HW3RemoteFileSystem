@@ -5,7 +5,7 @@
  */
 package se.kth.id1212.nphomework3.server.model;
 
-import se.kth.nphomework3.common.ClientRemoteInterface;
+import se.kth.id1212.nphomework3.common.ClientRemoteInterface;
 
 /**
  *

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package se.kth.nphomework3.common;
+package se.kth.id1212.nphomework3.common;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

@@ -10,7 +10,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import se.kth.id1212.nphomework3.client.view.InputHandler;
-import se.kth.nphomework3.common.ServerRemoteInterface;
+import se.kth.id1212.nphomework3.common.ServerRemoteInterface;
 
 /**
  *

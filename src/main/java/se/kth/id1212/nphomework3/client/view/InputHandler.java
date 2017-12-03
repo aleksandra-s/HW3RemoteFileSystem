@@ -14,8 +14,8 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Scanner;
-import se.kth.nphomework3.common.ClientRemoteInterface;
-import se.kth.nphomework3.common.ServerRemoteInterface;
+import se.kth.id1212.nphomework3.common.ClientRemoteInterface;
+import se.kth.id1212.nphomework3.common.ServerRemoteInterface;
 //import se.kth.id1212.nphomework3.client.controller.ClientController;
 
 public class InputHandler implements Runnable{

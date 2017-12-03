@@ -78,6 +78,7 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
     @Override
     public boolean unregister(String username, String password) throws RemoteException {
         try {
+            //System.out.println("unregistering user " + username);
             return fileDb.unregisterUser(username, password);
         } catch (SQLException ex) {
             ex.printStackTrace();

@@ -121,18 +121,20 @@ public class DatabaseAccess {
         boolean completelyUnregistered = false;
         findUserStmt.setString(1, username);
         result = findUserStmt.executeQuery();
-        if(result.next()){
-            if(result.getString(2).equals(password)) {
-                unregisterUserStmt.setString(1, username);
-                unregisterUserStmt.executeUpdate();
-                deleteFiles = true;
-            }
+        result.next();
+        System.out.println(result.getString(2));
+        if(result.getString(2).equals(password)) {
+            unregisterUserStmt.setString(1, username);
+            System.out.println("Unregistering " + username);
+            unregisterUserStmt.executeUpdate();
+            deleteFiles = true;
         }
         if(deleteFiles){
             ResultSet files = listAllFilesStmt.executeQuery();
             while(files.next()){
                 if(files.getString(2).equals(username)){
                     deleteFileStmt.setString(1, files.getString(1));
+                    System.out.println("Deleting " + files.getString(1));
                     deleteFileStmt.executeUpdate();
                 }
             }
@@ -146,10 +148,11 @@ public class DatabaseAccess {
         boolean loggedIn = false;
         findUserStmt.setString(1, username);
         result = findUserStmt.executeQuery();
-        if(result.next()){
-            if(result.getString(2).equals(password)) {
-                loggedIn = true;
-            }
+        //result.next();
+        result.next();
+        if(result.getString(2).equals(password)) {
+            System.out.println(result.getString(2));
+            loggedIn = true;
         }
         return loggedIn;
     }

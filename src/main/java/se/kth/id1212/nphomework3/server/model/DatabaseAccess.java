@@ -354,7 +354,7 @@ public class DatabaseAccess {
         return fileUpdated;
     }
     
-        public boolean updateFileNotification(String filename, String username, boolean notification) throws SQLException{
+    public boolean updateFileNotification(String filename, String username, boolean notification) throws SQLException{
         boolean fileUpdated = false;
         ResultSet result = null;
         boolean userCorrect = false;
@@ -374,7 +374,45 @@ public class DatabaseAccess {
         return fileUpdated;
     }
     
-    public void listAllFiles(Connection connection) throws SQLException {
+    public String readFile(String filename, String username) throws SQLException{
+        //boolean fileUpdated = false;
+        ResultSet result = null;
+        //boolean userCorrect = false;
+        findFileStmt.setString(1, filename);
+        result = findFileStmt.executeQuery();
+        if(result.next()){
+            if(result.getString(2).equals(username)){
+                return result.getString(3);
+            }
+            else if(result.getBoolean(4) && result.getBoolean(5)){
+                return result.getString(3);
+            }
+        }
+        return null;
+    }
+    
+      public String writeFile(String filename, String username) throws SQLException{
+        //boolean fileUpdated = false;
+        ResultSet result = null;
+        //boolean userCorrect = false;
+        findFileStmt.setString(1, filename);
+        result = findFileStmt.executeQuery();
+        if(result.next()){
+            if(result.getString(2).equals(username)){
+                return result.getString(3);
+            }
+            else if(result.getBoolean(4) && result.getBoolean(6)){
+                return result.getString(3);
+            }
+        }
+        return null;
+    }
+    
+    public void listFiles() throws SQLException{
+        listAllFiles(this.connection);
+    }
+    
+    private void listAllFiles(Connection connection) throws SQLException {
         ResultSet files = listAllFilesStmt.executeQuery();
         String privacy = "";
         String read = "";

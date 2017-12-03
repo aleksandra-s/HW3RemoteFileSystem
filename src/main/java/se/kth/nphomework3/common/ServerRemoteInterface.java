@@ -8,7 +8,6 @@ package se.kth.nphomework3.common;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  *
@@ -38,10 +37,12 @@ public interface ServerRemoteInterface extends Remote{
     
     public boolean updateFileNotifications(long userID, String fileName, boolean notification) throws RemoteException;
     
-    public ArrayList listFiles() throws RemoteException;
+    public ArrayList listFiles(long userID) throws RemoteException;
     
     public String readFile(long userID, String fileName) throws RemoteException;
     
     public String writeFile(long userID, String fileName) throws RemoteException;
+    
+    public void deleteFile(long userID, String filename) throws RemoteException;
     
 }

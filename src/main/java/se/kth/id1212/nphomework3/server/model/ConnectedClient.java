@@ -17,7 +17,6 @@ public class ConnectedClient{
     private final ClientRemoteInterface remoteNode;
 
     public ConnectedClient(String username, ClientRemoteInterface remoteNode, long userId) {
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         this.id = userId;
         this.remoteNode = remoteNode;
         this.username = username;

@@ -12,13 +12,13 @@ package se.kth.id1212.nphomework3.client.view;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Scanner;
 import se.kth.nphomework3.common.ClientRemoteInterface;
 import se.kth.nphomework3.common.ServerRemoteInterface;
 //import se.kth.id1212.nphomework3.client.controller.ClientController;
 
 public class InputHandler implements Runnable{
-    //private final ClientController contr = new ClientController();;
     private boolean receivingCmds = false;
     private final Scanner console = new Scanner(System.in);
     private final OutputHandler outputHandler = new OutputHandler();
@@ -26,10 +26,10 @@ public class InputHandler implements Runnable{
     private ServerRemoteInterface server;
     private long myIdAtServer;
     Command cmd;
+    boolean loggedIn = false;
     
     public InputHandler() throws RemoteException{
         myRemoteObj = new ConsoleOutput();
-        //this.server = server;
     }
     
     public enum Command{
@@ -48,6 +48,7 @@ public class InputHandler implements Runnable{
         READ_FILE,
         WRITE_FILE,
         LIST_FILE,
+        DELETE_FILE,
         UNKNOWN
     }
     
@@ -57,8 +58,6 @@ public class InputHandler implements Runnable{
             return;
         }
         receivingCmds = true;
-        //contr = new ClientController();
-        //outputHandler = new OutputHandler();
         new Thread(this).start();
     }
 
@@ -72,11 +71,13 @@ public class InputHandler implements Runnable{
                 String clientInput = readNextLine();
                 int i = clientInput.indexOf(' ');
                 int j;
+                int k;
                 String string1 = "";
                 String string2 = "";
                 String username;
                 String password;
-                //System.out.println(i);
+                String fileName;
+                String filePath;
                 cmd = Command.UNKNOWN;
                 if(i < 0){
                     if(clientInput.equals("help")){
@@ -93,106 +94,286 @@ public class InputHandler implements Runnable{
                     string1 = clientInput.substring(0,i);
                     if(string1.equals("login")){
                         cmd = Command.LOGIN;
-                        //string2 = clientInput.substring(i + 1);
-                        //int j = clientInput.indexOf(' ');
-                        
                     }
                     else if(string1.equals("register")){
                         cmd = Command.REGISTER;
-                        //string2 = clientInput.substring(i + 1);
                     }
                     else if(string1.equals("unregister")){
                         cmd = Command.UNREGISTER;
-                        //string2 = clientInput.substring(i + 1);
                     }
                     else if(string1.equals("upload")){
                         cmd = Command.UPLOAD_FILE;
-                        //string2 = clientInput.substring(i + 1);
                     }
                     else if(string1.equals("read")){
                         cmd = Command.READ_FILE;
-                        
-                        //string2 = clientInput.substring(i + 1);
                     }
                     else if(string1.equals("write")){
                         cmd = Command.WRITE_FILE;
-                        
-                        //string2 
+                    }
+                    else if(string1.equals("delete")){
+                        cmd = Command.DELETE_FILE;
                     }
                     else if(string1.equals("update")){
                         getUpdateCommand(clientInput.substring(i + 1));
                     }
                     string2 = clientInput.substring(i + 1);
-                    //cmd = getCommand(command,rest)
                 }
                 switch (cmd) {
                     case HELP:
-                        //receivingCmds = false;
-                        /*server.leaveConversation(myIdAtServer);
-                        boolean forceUnexport = false;
-                        UnicastRemoteObject.unexportObject(myRemoteObj, forceUnexport);*/
                         outputHandler.printInstructions();
                         break;
                     case LOGIN:
-                        /*lookupServer(cmdLine.getParameter(0));
-                        myIdAtServer
-                                = server.login(myRemoteObj,
-                                               new Credentials(cmdLine.getParameter(1),
-                                                               cmdLine.getParameter(2)));*/
+                        outputHandler.printLn("Logging in");
                         j = string2.indexOf(' ');
                         username = string2.substring(0,j);
                         password = string2.substring(j);
                         System.out.println(username + " " + password);
-                        
+                        myIdAtServer = server.login(username, password, myRemoteObj);
+                        if(myIdAtServer != 0){
+                            loggedIn = true;
+                        }
                         break;
                     case LOGOUT:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            outputHandler.printLn("Logging out");
+                            receivingCmds = false;
+                            server.logout(myIdAtServer);
+                            boolean forceUnexport = false;
+                            UnicastRemoteObject.unexportObject(myRemoteObj, forceUnexport);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case REGISTER:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        outputHandler.printLn("Registering user");
                         j = string2.indexOf(' ');
                         username = string2.substring(0,j);
                         password = string2.substring(j);
                         server.register(username, password);
                         break;
                     case UNREGISTER:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        outputHandler.printLn("Unregistering user");
+                        j = string2.indexOf(' ');
+                        username = string2.substring(0,j);
+                        password = string2.substring(j);
+                        server.unregister(username, password);
                         break;
                     case UPLOAD_FILE:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            String privacyAnswer;
+                            String notificationAnswer;
+                            boolean privacy = false;
+                            boolean readable = false;
+                            boolean writeable = false;
+                            boolean notification = false;
+                            j = string2.indexOf(' ');
+                            fileName = string2.substring(0,j);
+                            filePath = string2.substring(j);
+                            outputHandler.askPrivacy();
+                            privacyAnswer = readNextLine();
+                            if(privacyAnswer.equals("yes")){
+                                privacy = true; //public
+                                String readableAnswer;
+                                String writeableAnswer;
+                                outputHandler.askReadability();
+                                readableAnswer = readNextLine();
+                                if(readableAnswer.equals("yes")){
+                                    readable = true;
+                                }
+                                else if(!readableAnswer.equals("no")){
+                                outputHandler.printLn("Invalid answer");
+                                break;
+                                }
+                                outputHandler.askWriteability();
+                                writeableAnswer = readNextLine();
+                                if(writeableAnswer.equals("yes")){
+                                    writeable = true;
+                                }
+                                else if(!writeableAnswer.equals("no")){
+                                outputHandler.printLn("Invalid answer");
+                                break;
+                                }
+                            }
+                            else if(!privacyAnswer.equals("no")){
+                                outputHandler.printLn("Invalid answer");
+                                break;
+                            }
+                            outputHandler.askNotifications();
+                            notificationAnswer = readNextLine();
+                        if(notificationAnswer.equals("yes")){
+                            notification = true;
+                        }
+                        else if(!notificationAnswer.equals("no")){
+                            outputHandler.printLn("Invalid answer");
+                            break;
+                        }
+                        outputHandler.printLn("uploading file");
+                        server.uploadFile(myIdAtServer, fileName, filePath, privacy, readable, writeable, notification);}
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case UPDATE_FILE_NAME:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            outputHandler.printLn("updating file name");
+                            j = string2.indexOf(' ');
+                            String string3 = string2.substring(j + 1);
+                            k = string3.indexOf(' ');
+                            fileName = string3.substring(0,k);
+                            String newName = string3.substring(k + 1);
+                            server.updateFileName(myIdAtServer, fileName, newName);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case UPDATE_FILE_PATH:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            outputHandler.printLn("updating file path");
+                            j = string2.indexOf(' ');
+                            String string3 = string2.substring(j + 1);
+                            k = string3.indexOf(' ');
+                            fileName = string3.substring(0,k);
+                            String newPath = string3.substring(k + 1);
+                            server.updateFilePath(myIdAtServer, fileName, newPath);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case UPDATE_FILE_PRIVACY:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            outputHandler.printLn("updating file privacy");
+                            boolean privacy = false;
+                            j = string2.indexOf(' ');
+                            String string3 = string2.substring(j + 1);
+                            k = string3.indexOf(' ');
+                            fileName = string3.substring(0,k);
+                            String newPrivacy = string3.substring(k + 1);
+                            if(newPrivacy.equals("public")){
+                                privacy = true;
+                            }
+                            else if(!newPrivacy.equals("private")){
+                                outputHandler.printLn("Invalid command");
+                                break;
+                            }
+                            server.updateFilePrivacy(myIdAtServer, fileName, privacy);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case UPDATE_FILE_READABILITY:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            outputHandler.printLn("updating file readability");
+                            boolean readable = false;
+                            j = string2.indexOf(' ');
+                            String string3 = string2.substring(j + 1);
+                            k = string3.indexOf(' ');
+                            fileName = string3.substring(0,k);
+                            String newReadable = string3.substring(k + 1);
+                            if(newReadable.equals("readable")){
+                                readable = true;
+                            }
+                            else if(!newReadable.equals("unreadable")){
+                                outputHandler.printLn("Invalid command");
+                                break;
+                            }
+                            server.updateFileReadability(myIdAtServer, fileName, readable);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case UPDATE_FILE_WRITEABILITY:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            outputHandler.printLn("updating file writeability");
+                            boolean writeable = false;
+                            j = string2.indexOf(' ');
+                            String string3 = string2.substring(j + 1);
+                            k = string3.indexOf(' ');
+                            fileName = string3.substring(0,k);
+                            String newWriteable = string3.substring(k + 1);
+                            if(newWriteable.equals("writeable")){
+                                writeable = true;
+                            }
+                            else if(!newWriteable.equals("unwriteable")){
+                                outputHandler.printLn("Invalid command");
+                                break;
+                            }
+                            server.updateFilePrivacy(myIdAtServer, fileName, writeable);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case UPDATE_FILE_NOTIFICATION:
                         //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            outputHandler.printLn("updating file notification");
+                            boolean notification = false;
+                            j = string2.indexOf(' ');
+                            String string3 = string2.substring(j + 1);
+                            k = string3.indexOf(' ');
+                            fileName = string3.substring(0,k);
+                            String newNotification = string3.substring(k + 1);
+                            if(newNotification.equals("notify")){
+                                notification = true;
+                            }
+                            else if(!newNotification.equals("unnotify")){
+                                outputHandler.printLn("Invalid command");
+                                break;
+                            }
+                            server.updateFilePrivacy(myIdAtServer, fileName, notification);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case LIST_FILE:
+                        if(loggedIn){
+                            ArrayList<String> list = server.listFiles(myIdAtServer);
+                            outputHandler.printList(list);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case READ_FILE:
-                        //server.changeNickname(myIdAtServer, cmdLine.getParameter(0));
+                        if(loggedIn){
+                            fileName = string2;
+                            outputHandler.printLn("File path to read: " + server.readFile(myIdAtServer,fileName));
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case WRITE_FILE:
+                        if(loggedIn){
+                            fileName = string2;
+                            outputHandler.printLn("File path to write: " + server.writeFile(myIdAtServer,fileName));
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
+                        break;
+                    case DELETE_FILE:
+                        if(loggedIn){
+                            outputHandler.printLn("deleting file");
+                            fileName = string2;
+                            server.deleteFile(myIdAtServer,fileName);
+                        }
+                        else{
+                            outputHandler.printLn("Not logged in");
+                        }
                         break;
                     case UNKNOWN:
                         break;
-                    default:
-                        //server.broadcastMsg(myIdAtServer, cmdLine.getUserInput());
                 }
             } catch (Exception e) {
                 outputHandler.printLn("Operation failed");
+                e.printStackTrace();
             }
         }
     }

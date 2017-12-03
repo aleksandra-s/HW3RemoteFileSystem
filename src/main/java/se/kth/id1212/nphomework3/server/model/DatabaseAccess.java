@@ -5,6 +5,7 @@
  */
 package se.kth.id1212.nphomework3.server.model;
 
+import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -12,13 +13,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import se.kth.id1212.nphomework3.server.controller.ServerController;
 
 /**
  *
  * @author aleks_uuia3ly
  */
 public class DatabaseAccess {
-     //private static final String TABLE_NAME = "person";
     private static final String USER_TABLE_NAME = "users";
     private static final String FILE_TABLE_NAME = "files";
     private PreparedStatement registerUserStmt;
@@ -33,87 +35,15 @@ public class DatabaseAccess {
     private PreparedStatement updateFileReadabilityStmt;
     private PreparedStatement updateFileWriteabilityStmt;
     private PreparedStatement updateFileNotificationsStmt;
-    //private PreparedStatement updateFileStmt;
-   /* private PreparedStatement updateFileNameStmt; //only can be done if file owner
-    private PreparedStatement updateFilePrivacyStmt; //only can be done by file owner
-    private PreparedStatement updateReadPrivacyStmt; //only can be done by file owner
-    private PreparedStatement updatedWritePrivacyStmt; //only can be done by file owner
-    private PreparedStatement updateNotificationStmt; //only can be done by file owner*/
     private PreparedStatement listAllFilesStmt;
-    private PreparedStatement listAllUsersStmt;
+    //private PreparedStatement listAllUsersStmt;
     private Connection connection;
+    private ServerController contr;
     
-    public DatabaseAccess(String databaseName) throws ClassNotFoundException, SQLException{
+    public DatabaseAccess(String databaseName, ServerController contr) throws ClassNotFoundException, SQLException{
             connection = createDatasource(databaseName);
             prepareStatements(connection);
-            //System.out.println("Help");
-       
-    }
-
-    private void accessDB() {
-        try {
-            //Class.forName("org.apache.derby.jdbc.ClientXADataSource");
-            /*Connection connection = DriverManager.getConnection(
-                    "jdbc:derby://localhost:1527/MyTestDatabase", "jdbc",
-                    "jdbc");*/
-            /*Connection connection = connectToDB("test");
-            createUserTable(connection);
-            createFileTable(connection);*/
-            //Connection connection = createDatasource("Bank");
-            //Statement stmt = connection.createStatement();
-            //prepareStatements(connection);
-            
-            registerUserStmt.setString(1, "stina");
-            registerUserStmt.setString(2, "abcd");
-             registerUserStmt.executeUpdate();
-            registerUserStmt.setString(1, "olle");
-            registerUserStmt.setString(2, "abcd");
-            //createPersonStmt.setInt(3, 43);
-            registerUserStmt.executeUpdate();
-            uploadFileStmt.setString(1, "stina's file");
-            uploadFileStmt.setString(2, "stina");
-            uploadFileStmt.setString(3, "file path");
-            uploadFileStmt.setBoolean(4, true);
-            uploadFileStmt.setBoolean(5, true);
-            uploadFileStmt.setBoolean(6, false);
-            uploadFileStmt.setBoolean(7, true);
-            uploadFileStmt.executeUpdate();
-            uploadFileStmt.setString(1, "stina's second file");
-            uploadFileStmt.setString(2, "stina");
-            uploadFileStmt.setString(3, "file path");
-            uploadFileStmt.setBoolean(4, true);
-            uploadFileStmt.setBoolean(5, true);
-            uploadFileStmt.setBoolean(6, false);
-            uploadFileStmt.setBoolean(7, true);
-            uploadFileStmt.executeUpdate();
-            uploadFileStmt.setString(1, "olle's file");
-            uploadFileStmt.setString(2, "olle");
-            uploadFileStmt.setString(3, "file path");
-            uploadFileStmt.setBoolean(4, true);
-            uploadFileStmt.setBoolean(5, true);
-            uploadFileStmt.setBoolean(6, false);
-            uploadFileStmt.setBoolean(7, true);
-            uploadFileStmt.executeUpdate();
-            //createPersonStmt.executeUpdate();
-            listAllFiles(connection);
-            updateFileReadability("stina's second file", "stina", false);
-            listAllFiles(connection);
-            //deletePersonStmt.setString(1, "stina");
-            //deletePersonStmt.executeUpdate();
-            //listAllRows(connection);
-        } catch (SQLException ex1) {
-            /*try {
-                //ex.printStackTrace();
-                unregisterUserStmt.setString(1, "olle");
-                unregisterUserStmt.executeUpdate();
-                deleteFileStmt.setString(1, "olle's file");
-                deleteFileStmt.executeUpdate();
-                unregisterUser("stina", "abcd");
-                //accessDB();
-            } catch (SQLException ex) {*/
-                ex1.printStackTrace();
-            //}
-        }
+            this.contr = contr;
     }
 
     private void createUserTable(Connection connection) throws SQLException {
@@ -150,7 +80,7 @@ public class DatabaseAccess {
         unregisterUserStmt = connection.prepareStatement("DELETE FROM " + USER_TABLE_NAME + " WHERE username = ?");
         uploadFileStmt = connection.prepareStatement("INSERT INTO " + FILE_TABLE_NAME + " VALUES (?, ?, ?, ?, ?, ?, ?)");
         deleteFileStmt = connection.prepareStatement("DELETE FROM " + FILE_TABLE_NAME + " WHERE filename = ?");
-        listAllUsersStmt = connection.prepareStatement("SELECT * from " + USER_TABLE_NAME);
+        //listAllUsersStmt = connection.prepareStatement("SELECT * from " + USER_TABLE_NAME);
         listAllFilesStmt = connection.prepareStatement("SELECT * from " + FILE_TABLE_NAME);
         findUserStmt = connection.prepareStatement("SELECT * from "
                                                       + USER_TABLE_NAME + " WHERE username = ?");
@@ -374,10 +304,8 @@ public class DatabaseAccess {
         return fileUpdated;
     }
     
-    public String readFile(String filename, String username) throws SQLException{
-        //boolean fileUpdated = false;
+    public String readFile(String filename, String username) throws SQLException, RemoteException{
         ResultSet result = null;
-        //boolean userCorrect = false;
         findFileStmt.setString(1, filename);
         result = findFileStmt.executeQuery();
         if(result.next()){
@@ -385,16 +313,17 @@ public class DatabaseAccess {
                 return result.getString(3);
             }
             else if(result.getBoolean(4) && result.getBoolean(5)){
+                if(result.getBoolean(7)){
+                    contr.notifyClient(result.getString(2),result.getString(1));
+                }
                 return result.getString(3);
             }
         }
         return null;
     }
     
-      public String writeFile(String filename, String username) throws SQLException{
-        //boolean fileUpdated = false;
+      public String writeFile(String filename, String username) throws SQLException, RemoteException{
         ResultSet result = null;
-        //boolean userCorrect = false;
         findFileStmt.setString(1, filename);
         result = findFileStmt.executeQuery();
         if(result.next()){
@@ -402,17 +331,21 @@ public class DatabaseAccess {
                 return result.getString(3);
             }
             else if(result.getBoolean(4) && result.getBoolean(6)){
+                if(result.getBoolean(7)){
+                    contr.notifyClient(result.getString(2),result.getString(1));
+                }
                 return result.getString(3);
             }
         }
         return null;
     }
     
-    public void listFiles() throws SQLException{
-        listAllFiles(this.connection);
+    public ArrayList listFiles() throws SQLException{
+        return listAllFiles(this.connection);
     }
     
-    private void listAllFiles(Connection connection) throws SQLException {
+    private ArrayList listAllFiles(Connection connection) throws SQLException {
+        ArrayList<String> returnList = new ArrayList();
         ResultSet files = listAllFilesStmt.executeQuery();
         String privacy = "";
         String read = "";
@@ -443,10 +376,13 @@ public class DatabaseAccess {
             else{
                 notifications = "notifications off";
             }
+            returnList.add("name: " + files.getString(1) + ", owner: " + files.getString(2) + ", file path: " + files.
+                    getString(3) + ", " + privacy + ", " + read + ", " + write + ", " + notifications);
             System.out.println(
                     "name: " + files.getString(1) + ", owner: " + files.getString(2) + ", file path: " + files.
                     getString(3) + ", " + privacy + ", " + read + ", " + write + ", " + notifications);
            }
+        return returnList;
     }
     
     private Connection connectToDB(String databaseName)throws ClassNotFoundException, SQLException{
@@ -461,7 +397,4 @@ public class DatabaseAccess {
         return connection;
     }
 
-   /* public static void main(String[] args) throws ClassNotFoundException {
-        //new DatabaseAccess("test").accessDB();
-    }*/
 }

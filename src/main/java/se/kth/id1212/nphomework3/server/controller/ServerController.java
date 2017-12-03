@@ -13,8 +13,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import se.kth.id1212.nphomework3.server.model.ConnectedClient;
 import se.kth.id1212.nphomework3.server.model.DatabaseAccess;
 import se.kth.nphomework3.common.ClientRemoteInterface;
@@ -31,14 +29,13 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
 
     public ServerController(String databaseName) throws RemoteException, ClassNotFoundException, SQLException{
         super();
-        fileDb = new DatabaseAccess(databaseName);
+        fileDb = new DatabaseAccess(databaseName, this);
         idIncrementer = 0;
     }
 
     @Override
     public long login(String username, String password, ClientRemoteInterface remoteNode) throws RemoteException {
         try {
-            //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             if(fileDb.checkUserLogin(username, password)){
                 Iterator it = connectedClients.entrySet().iterator();
                 while(it.hasNext()){
@@ -49,14 +46,13 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
                         break;
                     }
                 }
-                idIncrementer += idIncrementer;
+                idIncrementer = ++idIncrementer;
                 long userId = idIncrementer;
                 ConnectedClient newClient = new ConnectedClient(username, remoteNode, userId);
                 connectedClients.put(userId, newClient);
                 return userId;
             }
         } catch (SQLException ex) {
-            //return 0;
             ex.printStackTrace();
         }
         return 0;
@@ -74,8 +70,6 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
             System.out.println("registered user");
             return true;
         } catch (SQLException ex) {
-            //return registered;
-            //send msg to client
             ex.printStackTrace();
         }
         return false;
@@ -86,7 +80,6 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
         try {
             return fileDb.unregisterUser(username, password);
         } catch (SQLException ex) {
-            //Logger.getLogger(ServerController.class.getName()).log(Level.SEVERE, null, ex);
             ex.printStackTrace();
         }
         return false;
@@ -99,67 +92,144 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
             fileDb.uploadFile(fileName, username, filePath, privacy, readable, writeable, notification);
             return true;
         } catch (SQLException ex) {
-            //Logger.getLogger(ServerController.class.getName()).log(Level.SEVERE, null, ex);
             ex.printStackTrace();
+            sendToClient(userID, "Couldn't upload file");
         }
         return false;
     }
 
     @Override
     public boolean updateFileName(long userID, String fileName, String newName) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        String username = connectedClients.get(userID).getUsername();
+        try {
+            fileDb.updateFileName(fileName, username, newName); 
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            sendToClient(userID, "Couldn't update file");
+        }
+        return false;
     }
 
     @Override
     public boolean updateFilePath(long userID, String fileName, String filePath) throws RemoteException {
         String username = connectedClients.get(userID).getUsername();
         try {
-            fileDb.updateFilePath(fileName, username, filePath); //To change body of generated methods, choose Tools | Templates.
+            fileDb.updateFilePath(fileName, username, filePath); 
         } catch (SQLException ex) {
             ex.printStackTrace();
+            sendToClient(userID, "Couldn't update file");
         }
         return false;
     }
 
     @Override
     public boolean updateFilePrivacy(long userID, String fileName, boolean privacy) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        String username = connectedClients.get(userID).getUsername();
+        try {
+            fileDb.updateFilePrivacy(fileName, username, privacy);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            sendToClient(userID, "Couldn't update file");
+        }
+        return false;
     }
 
     @Override
     public boolean updateFileReadability(long userID, String fileName, boolean readable) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        String username = connectedClients.get(userID).getUsername();
+        try {
+            fileDb.updateFileReadability(fileName, username, readable);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            sendToClient(userID, "Couldn't update file");
+        }
+        return false;
     }
 
     @Override
     public boolean updateFileWriteability(long userID, String fileName, boolean writeable) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        String username = connectedClients.get(userID).getUsername();
+        try {
+            fileDb.updateFileWriteability(fileName, username, writeable); 
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            sendToClient(userID, "Couldn't update file");
+        }
+        return false;
     }
 
     @Override
     public boolean updateFileNotifications(long userID, String fileName, boolean notification) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        String username = connectedClients.get(userID).getUsername();
+        try {
+            fileDb.updateFileNotification(fileName, username, notification); 
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            sendToClient(userID, "Couldn't update file");
+        }
+        return false;
     }
 
     @Override
-    public ArrayList listFiles() throws RemoteException {
+    public ArrayList listFiles(long userID) throws RemoteException {
         try {
-            fileDb.listFiles(); //To change body of generated methods, choose Tools | Templates.
+            return fileDb.listFiles(); 
         } catch (SQLException ex) {
             ex.printStackTrace();
+            sendToClient(userID, "Couldn't list files");
         }
         return null;
     }
 
     @Override
-    public String readFile(long userID, String fileName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public String readFile(long userID, String fileName) throws RemoteException {
+        String username = connectedClients.get(userID).getUsername(); 
+        try {
+            return fileDb.readFile(fileName, username);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            sendToClient(userID, "Couldn't read file");
+        }
+        return null;
     }
 
     @Override
-    public String writeFile(long userID, String fileName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public String writeFile(long userID, String fileName) throws RemoteException {
+         String username = connectedClients.get(userID).getUsername(); 
+        try {
+            return fileDb.writeFile(fileName, username);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            sendToClient(userID, "Couldn't read file");
+        }
+        return null;
     }
     
+    @Override
+    public void deleteFile(long userID, String filename) throws RemoteException{
+        String username = connectedClients.get(userID).getUsername(); 
+        try {
+            fileDb.deleteFile(filename, username);
+        } catch (SQLException ex) {
+            sendToClient(userID, "Couldn't delete file");;
+        }
+    }
     
+    public void notifyClient(String username, String filename) throws RemoteException{
+           Iterator it = connectedClients.entrySet().iterator();
+                while(it.hasNext()){
+                    Map.Entry checkClient = (Map.Entry) it.next();
+                    ConnectedClient c = (ConnectedClient) checkClient.getValue();
+                    if(c.getUsername().equals(username)){
+                        String msg = "A user has accessed file " + filename;
+                        sendToClient(c.getID(),msg);
+                        break;
+                    }
+                }
+    }
+    
+    private void sendToClient(long userID, String msg) throws RemoteException{
+        ConnectedClient client = connectedClients.get(userID);
+        client.getRemoteNode().recvMsg(msg);
+    }
 }

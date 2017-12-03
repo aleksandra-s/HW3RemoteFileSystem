@@ -302,7 +302,7 @@ public class InputHandler implements Runnable{
                                 outputHandler.printLn("Invalid command");
                                 break;
                             }
-                            server.updateFilePrivacy(myIdAtServer, fileName, writeable);
+                            server.updateFileWriteability(myIdAtServer, fileName, writeable);
                         }
                         else{
                             outputHandler.printLn("Not logged in");
@@ -325,7 +325,7 @@ public class InputHandler implements Runnable{
                                 outputHandler.printLn("Invalid command");
                                 break;
                             }
-                            server.updateFilePrivacy(myIdAtServer, fileName, notification);
+                            server.updateFileNotifications(myIdAtServer, fileName, notification);
                         }
                         else{
                             outputHandler.printLn("Not logged in");

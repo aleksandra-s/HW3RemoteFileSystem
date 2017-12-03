@@ -340,11 +340,11 @@ public class DatabaseAccess {
         return null;
     }
     
-    public ArrayList listFiles() throws SQLException{
-        return listAllFiles(this.connection);
+    public ArrayList listFiles(String username) throws SQLException{
+        return listAllFiles(this.connection, username);
     }
     
-    private ArrayList listAllFiles(Connection connection) throws SQLException {
+    private ArrayList listAllFiles(Connection connection, String username) throws SQLException {
         ArrayList<String> returnList = new ArrayList();
         ResultSet files = listAllFilesStmt.executeQuery();
         String privacy = "";
@@ -352,11 +352,15 @@ public class DatabaseAccess {
         String write = "";
         String notifications = "";
         while (files.next()) {
+            boolean add = true;
             if(files.getBoolean(4)){
                 privacy = "public";
             }
             else{
                 privacy = "private";
+                if(!username.equals(files.getString(2))){
+                    add = false;
+                }
             }
             if(files.getBoolean(5)){
                 read = "readable";
@@ -376,8 +380,10 @@ public class DatabaseAccess {
             else{
                 notifications = "notifications off";
             }
-            returnList.add("name: " + files.getString(1) + ", owner: " + files.getString(2) + ", file path: " + files.
+            if(add){
+                returnList.add("name: " + files.getString(1) + ", owner: " + files.getString(2) + ", file path: " + files.
                     getString(3) + ", " + privacy + ", " + read + ", " + write + ", " + notifications);
+            }
             System.out.println(
                     "name: " + files.getString(1) + ", owner: " + files.getString(2) + ", file path: " + files.
                     getString(3) + ", " + privacy + ", " + read + ", " + write + ", " + notifications);

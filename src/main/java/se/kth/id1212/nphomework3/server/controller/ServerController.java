@@ -172,8 +172,9 @@ public class ServerController extends UnicastRemoteObject implements ServerRemot
 
     @Override
     public ArrayList listFiles(long userID) throws RemoteException {
+         String username = connectedClients.get(userID).getUsername();
         try {
-            return fileDb.listFiles(); 
+            return fileDb.listFiles(username); 
         } catch (SQLException ex) {
             ex.printStackTrace();
             sendToClient(userID, "Couldn't list files");
